@@ -1,0 +1,39 @@
+# MTG Standard Cube Builder — Configuration
+
+cube_size: 360
+
+# Slots per color/category. Must sum to cube_size (or will be scaled).
+# Multicolor cards are distributed here; lands are utility lands only.
+color_slots:
+  white: 60
+  blue: 60
+  black: 60
+  red: 60
+  green: 60
+  multicolor: 40
+  artifact: 12
+  land: 8
+
+ranking:
+  # Extra weight multiplier per additional archetype a card appears in.
+  # e.g. 0.2 → a card in 3 archetypes scores 1.4x a card in 1 archetype.
+  cross_archetype_weight: 0.2
+  # Ignore cards appearing in fewer than this many archetypes (across all sources).
+  min_archetype_appearances: 1
+  # How many copies in a deck count as "full playsets" for normalization.
+  playset_size: 4
+
+data_sources:
+  goldfish:
+    enabled: true
+    weight: 1.0          # multiplied into card scores from this source
+    cache_ttl_hours: 24
+  moxfield:
+    enabled: true
+    weight: 0.8
+    cache_ttl_hours: 24
+    # Moxfield search params
+    page_size: 64
+    max_pages: 5
+    sort_type: views      # views | likes | updated
+    min_cards: 58         # skip obviously incomplete decks
