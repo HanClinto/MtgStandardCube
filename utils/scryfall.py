@@ -9,12 +9,19 @@ CACHE_DIR = Path("data/cache")
 SCRYFALL_COLLECTION_URL = "https://api.scryfall.com/cards/collection"
 SCRYFALL_NAMED_URL = "https://api.scryfall.com/cards/named"
 BATCH_SIZE = 75  # Scryfall collection endpoint max
+HEADERS = {"User-Agent": "MtgStandardCubeBuilder/1.0 (github.com/HanClinto/MtgStandardCube)"}
+
+
+def normalize_card_name(name: str) -> str:
+    """Return the front-face name for double-faced cards, stripping ' // ...'."""
+    return name.split(" // ")[0].strip()
 
 
 def get_cards_metadata(card_names: list[str], use_cache: bool = True) -> dict[str, dict]:
     """
     Fetch color/type metadata for a list of card names from Scryfall.
-    Returns a dict keyed by canonical card name.
+    Normalizes MDFC names to front-face only.
+    Returns a dict keyed by the original card name passed in.
     """
     cache_file = CACHE_DIR / "scryfall_cards.json"
     cache: dict[str, dict] = {}
@@ -22,14 +29,23 @@ def get_cards_metadata(card_names: list[str], use_cache: bool = True) -> dict[st
     if use_cache and cache_file.exists():
         cache = json.loads(cache_file.read_text())
 
-    missing = [n for n in card_names if n not in cache]
+    # Map original names → normalized front-face names
+    norm_map = {n: normalize_card_name(n) for n in card_names}
+    normalized_names = list(set(norm_map.values()))
+    missing = [n for n in normalized_names if n not in cache]
+
     if missing:
         fetched = _fetch_collection(missing)
         cache.update(fetched)
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
         cache_file.write_text(json.dumps(cache, indent=2))
 
-    return {n: cache[n] for n in card_names if n in cache}
+    # Return keyed by original name (so callers don't need to normalize)
+    result = {}
+    for orig, norm in norm_map.items():
+        if norm in cache:
+            result[orig] = cache[norm]
+    return result
 
 
 def _fetch_collection(names: list[str]) -> dict[str, dict]:
@@ -40,7 +56,7 @@ def _fetch_collection(names: list[str]) -> dict[str, dict]:
         resp = requests.post(
             SCRYFALL_COLLECTION_URL,
             json={"identifiers": identifiers},
-            headers={"Content-Type": "application/json"},
+            headers={**HEADERS, "Content-Type": "application/json"},
             timeout=30,
         )
         resp.raise_for_status()
@@ -75,12 +91,17 @@ def _extract_metadata(card: dict) -> dict:
     is_artifact = "Artifact" in type_line
     is_creature = "Creature" in type_line
 
+    legalities = card.get("legalities", {})
+    standard_legal = legalities.get("standard", "not_legal") == "legal"
+    is_basic_land = is_land and "Basic" in type_line
+
     return {
         "name": card["name"],
         "colors": colors,
         "color_identity": color_identity,
         "type_line": type_line,
         "is_land": is_land,
+        "is_basic_land": is_basic_land,
         "is_artifact": is_artifact,
         "is_creature": is_creature,
         "cmc": card.get("cmc", 0),
@@ -88,6 +109,7 @@ def _extract_metadata(card: dict) -> dict:
         "set": card.get("set", ""),
         "set_name": card.get("set_name", ""),
         "scryfall_uri": card.get("scryfall_uri", ""),
+        "standard_legal": standard_legal,
     }
 
 

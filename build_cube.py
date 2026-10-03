@@ -44,18 +44,21 @@ def run(config: dict, use_cache: bool, output_path: str) -> None:
 
     all_archetypes: list[dict] = []
 
-    if src_cfg.get("goldfish", {}).get("enabled", True):
-        from scrapers.goldfish import get_all_decklists as gf_decklists
-        gf_cfg = src_cfg["goldfish"]
-        archs = gf_decklists(
+    if src_cfg.get("mtgo", {}).get("enabled", True):
+        from scrapers.mtgo import get_all_decklists as mtgo_decklists
+        mtgo_cfg = src_cfg["mtgo"]
+        archs = mtgo_decklists(
             use_cache=use_cache,
-            cache_ttl_hours=gf_cfg.get("cache_ttl_hours", 24),
+            cache_ttl_hours=mtgo_cfg.get("cache_ttl_hours", 24),
+            max_events=mtgo_cfg.get("max_events", 20),
+            mtgo_only=mtgo_cfg.get("mtgo_only", True),
         )
+        base_weight = mtgo_cfg.get("weight", 1.0)
         for a in archs:
-            a["source"] = "goldfish"
-            a["source_weight"] = gf_cfg.get("weight", 1.0)
+            # source_weight is already set per-deck (placement × tier); scale by base
+            a["source_weight"] = a.get("source_weight", 1.0) * base_weight
         all_archetypes.extend(archs)
-        print(f"[main] Goldfish: {len(archs)} archetypes loaded")
+        print(f"[main] MTGO: {len(archs)} tournament decklists loaded")
 
     if src_cfg.get("moxfield", {}).get("enabled", True):
         from scrapers.moxfield import get_all_decklists as mf_decklists

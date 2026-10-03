@@ -71,8 +71,8 @@ def _parse_metagame_html(html: str) -> list[dict]:
 
         name = name_el.get_text(strip=True)
         href = name_el.get("href", "")
-        # href looks like /archetype/standard-azorius-control
-        slug = href.rstrip("/").split("/")[-1]
+        # href looks like /archetype/standard-azorius-control#online
+        slug = href.rstrip("/").split("/")[-1].split("#")[0]
 
         pct = 0.0
         for el in tile.select(".archetype-tile-stats-title, .percentage"):

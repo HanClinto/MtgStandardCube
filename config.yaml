@@ -1,18 +1,18 @@
 # MTG Standard Cube Builder — Configuration
 
-cube_size: 360
+cube_size: 540
 
 # Slots per color/category. Must sum to cube_size (or will be scaled).
 # Multicolor cards are distributed here; lands are utility lands only.
 color_slots:
-  white: 60
-  blue: 60
-  black: 60
-  red: 60
-  green: 60
-  multicolor: 40
-  artifact: 12
-  land: 8
+  white: 90
+  blue: 90
+  black: 90
+  red: 90
+  green: 90
+  multicolor: 60
+  artifact: 18
+  land: 12
 
 ranking:
   # Extra weight multiplier per additional archetype a card appears in.
@@ -24,16 +24,18 @@ ranking:
   playset_size: 4
 
 data_sources:
-  goldfish:
+  mtgo:
     enabled: true
-    weight: 1.0          # multiplied into card scores from this source
+    weight: 1.0           # base multiplier; individual decks also get placement × tier weights
     cache_ttl_hours: 24
+    max_events: 20        # how many recent Standard events to pull
+    mtgo_only: true       # only pull events labeled as MTGO (skip paper-only events)
   moxfield:
     enabled: true
-    weight: 0.8
+    weight: 0.6           # lower than MTGO since it's not tournament-filtered
     cache_ttl_hours: 24
     # Moxfield search params
     page_size: 64
     max_pages: 5
     sort_type: views      # views | likes | updated
-    min_cards: 58         # skip obviously incomplete decks
+    min_cards: 58         # skip obviously incomplete decks (checks total quantity)

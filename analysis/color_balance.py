@@ -21,13 +21,26 @@ def build_cube(
     metadata = get_cards_metadata(card_names, use_cache=use_cache)
 
     # Enrich ranked cards with metadata and category
+    # Drop non-Standard-legal cards and basic lands (not cube picks)
     enriched: list[dict] = []
+    dropped_legal = 0
+    dropped_basic = 0
     for card in ranked_cards:
         meta = metadata.get(card["name"])
         if meta is None:
             continue
+        if not meta.get("standard_legal", True):
+            dropped_legal += 1
+            continue
+        if meta.get("is_basic_land", False):
+            dropped_basic += 1
+            continue
         category = color_category(meta)
         enriched.append({**card, **meta, "color_category": category})
+    if dropped_legal:
+        print(f"[color_balance] Dropped {dropped_legal} non-Standard-legal cards")
+    if dropped_basic:
+        print(f"[color_balance] Dropped {dropped_basic} basic lands")
 
     # Sort each category bucket by final_score and pick top N
     buckets: dict[str, list[dict]] = {cat: [] for cat in color_slots}

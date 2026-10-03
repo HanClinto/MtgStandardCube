@@ -9,6 +9,7 @@ archetype_weight:
   - For Moxfield sources: uniform weight based on views/likes rank
 """
 
+import re
 from collections import defaultdict
 
 
@@ -47,6 +48,16 @@ def rank_cards(
         for card in arch.get("cards", []):
             name = card["name"]
             qty = card["quantity"]
+            # Skip section headers and clearly non-card entries
+            if not name or not name[0].isupper() and not name[0].isalpha():
+                continue
+            if name.upper() in ("SIDEBOARD", "DECK", "CREATURES", "SPELLS",
+                                  "INSTANTS", "SORCERIES", "LANDS", "ARTIFACTS",
+                                  "ENCHANTMENTS", "PLANESWALKERS",
+                                  "INSTANTS AND SORC.", "OTHER SPELLS"):
+                continue
+            if re.match(r"^[\d.]+$", name):  # pure number
+                continue
             normalized = min(qty / playset_size, 1.0)
             card_scores[name] += normalized * w
             card_archetypes[name].add(arch_label)

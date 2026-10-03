@@ -81,7 +81,8 @@ def get_all_decklists(
             cards, colors = _get_deck_cards(
                 pub_id, use_cache=use_cache, cache_ttl_hours=cache_ttl_hours
             )
-            if len(cards) < min_cards:
+            total_qty = sum(c["quantity"] for c in cards)
+            if total_qty < min_cards:
                 continue
             archetype = _infer_archetype(deck_meta, colors)
             result.append({
